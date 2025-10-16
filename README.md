@@ -115,4 +115,5 @@ Projeto desenvolvido para uso pessoal em campanhas de RPG do sistema Tormenta.
 
 **Desenvolvido por:** Sorentto  
 **Versão:** 3.4.1.5  
-**Última Atualização:** Outubro 2025
+**Última Atualização:** 15 de outubro de 2025 - 23:36  
+**Status GitHub:** ✅ Sincronizado e funcionando
