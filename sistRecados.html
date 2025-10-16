@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recados Flutuantes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .add-button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .add-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .add-button:active {
+            transform: translateY(0);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .modal-content textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-ok {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-ok:hover {
+            background: #5568d3;
+        }
+
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+
+        .note {
+            position: absolute;
+            padding: 25px;
+            background: #ffd54f;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            min-width: 200px;
+            max-width: 350px;
+            cursor: move;
+            transition: transform 0.3s ease;
+            word-wrap: break-word;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .note:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .note-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .note-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            transition: background 0.3s ease;
+        }
+
+        .note-close:hover {
+            background: #ff5252;
+        }
+
+        .note.color1 { background: #ffd54f; }
+        .note.color2 { background: #81c784; }
+        .note.color3 { background: #64b5f6; }
+        .note.color4 { background: #ffb74d; }
+        .note.color5 { background: #ff8a80; }
+        .note.color6 { background: #ba68c8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="add-button" onclick="openModal()">+ Adicionar Recado</button>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2>Novo Recado</h2>
+            <textarea id="noteText" placeholder="Digite seu recado aqui..."></textarea>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn-ok" onclick="createNote()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDragging = false;
+        let currentNote = null;
+        let offsetX, offsetY;
+
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('noteText').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.getElementById('noteText').value = '';
+        }
+
+        function createNote() {
+            const text = document.getElementById('noteText').value.trim();
+            
+            if (text === '') {
+                alert('Por favor, escreva algo no recado!');
+                return;
+            }
+
+            const note = document.createElement('div');
+            note.className = 'note color' + (Math.floor(Math.random() * 6) + 1);
+            
+            const noteText = document.createElement('div');
+            noteText.className = 'note-text';
+            noteText.textContent = text;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'note-close';
+            closeBtn.textContent = '×';
+            closeBtn.onclick = function() {
+                note.remove();
+            };
+            
+            note.appendChild(closeBtn);
+            note.appendChild(noteText);
+            
+            const x = Math.random() * (window.innerWidth - 350);
+            const y = Math.random() * (window.innerHeight - 200) + 100;
+            note.style.left = x + 'px';
+            note.style.top = y + 'px';
+            
+            note.addEventListener('mousedown', startDrag);
+            
+            document.body.appendChild(note);
+            closeModal();
+        }
+
+        function startDrag(e) {
+            if (e.target.classList.contains('note-close')) return;
+            
+            isDragging = true;
+            currentNote = e.currentTarget;
+            offsetX = e.clientX - currentNote.offsetLeft;
+            offsetY = e.clientY - currentNote.offsetTop;
+            currentNote.style.zIndex = 1000;
+        }
+
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging && currentNote) {
+                currentNote.style.left = (e.clientX - offsetX) + 'px';
+                currentNote.style.top = (e.clientY - offsetY) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (currentNote) {
+                currentNote.style.zIndex = 'auto';
+            }
+            isDragging = false;
+            currentNote = null;
+        });
+
+        document.getElementById('noteText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                createNote();
+            }
+        });
+
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

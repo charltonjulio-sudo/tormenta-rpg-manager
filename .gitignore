@@ -1,0 +1,39 @@
+# Arquivos de backup
+BKP/
+*.bkp
+*_backup*
+*_bkp*
+
+# Arquivos temporários
+*.tmp
+*.temp
+*~
+
+# Arquivos de log
+*.log
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node modules (caso seja usado futuramente)
+node_modules/
+
+# Dados sensíveis (manter dados do personagem local)
+DATA/
+GRIMORIOS/
+
+# Arquivos específicos de desenvolvimento
+*.orig
+*.swp
+*.swo
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Arquivos de sistema Linux
+*~
+.directory

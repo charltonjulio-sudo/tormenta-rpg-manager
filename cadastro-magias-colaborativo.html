@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro Colaborativo de Magias - Tormenta RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            min-height: 100vh;
+        }
+        .themed-bg-surface { background-color: #334155; }
+        .themed-bg-surface-alt { background-color: #475569; }
+        .themed-text-base { color: #e2e8f0; }
+        .themed-text-muted { color: #94a3b8; }
+        .themed-border { border-color: #64748b; }
+        .spell-tag { 
+            display: inline-block; 
+            padding: 2px 8px; 
+            margin: 2px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+        .spell-tag-arcana { background-color: #3b82f6; color: white; }
+        .spell-tag-divina { background-color: #f59e0b; color: white; }
+        .magic-list-item {
+            transition: all 0.2s ease;
+        }
+        .magic-list-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="themed-text-base">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-green-400 mb-2">
+                🪄 Cadastro Colaborativo de Magias
+            </h1>
+            <p class="text-lg text-gray-300 mb-4">Sistema Tormenta RPG</p>
+            <div class="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 max-w-2xl mx-auto">
+                <p class="text-sm text-blue-200">
+                    <strong>📋 Instruções:</strong> Cadastre as magias que você conhece e depois exporte o arquivo JSON para enviar ao organizador da campanha.
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Painel de Cadastro -->
+            <div class="bg-slate-800 rounded-lg border border-slate-600 p-6">
+                <h2 class="text-xl font-bold text-green-400 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Cadastrar Nova Magia
+                </h2>
+                
+                <div class="space-y-4">
+                    <input type="text" id="spell-name" placeholder="Nome da Magia" 
+                        class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                    
+                    <!-- Sistema de Tags para Níveis -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-green-300">Níveis de Magia</label>
+                        <div class="flex flex-wrap gap-2" id="spell-level-tags">
+                            <!-- Tags aparecerão aqui -->
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <select id="spell-level-type" class="flex-1 p-2 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500">
+                                <option value="Arcana">Arcana</option>
+                                <option value="Divina">Divina</option>
+                            </select>
+                            <input type="number" id="spell-level-number" placeholder="Nível" min="0" max="9" 
+                                class="w-20 p-2 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500">
+                            <button type="button" onclick="addSpellLevelTag()" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-150 text-sm whitespace-nowrap">
+                                + Adicionar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-3">
+                        <input type="text" id="spell-school" placeholder="Escola/Descritor (Ex: Evocação/Fogo)" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <input type="text" id="spell-components" value="V, S, M" placeholder="Componentes" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <input type="text" id="spell-time" placeholder="Tempo de Execução (Ex: 1 Ação Padrão)" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <input type="text" id="spell-range" placeholder="Alcance (Ex: Toque, Curto, 30m)" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <input type="text" id="spell-target" placeholder="Alvo/Área (Ex: 1 Criatura, Cone 6m)" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <input type="text" id="spell-duration" placeholder="Duração (Ex: Instantânea, 1 Rodada)" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <input type="text" id="spell-resistance" placeholder="Teste de Resistência" 
+                            class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                    </div>
+                    
+                    <textarea id="spell-description" placeholder="Descrição detalhada da magia..." rows="4" 
+                        class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50"></textarea>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="addSpell()" 
+                            class="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition duration-150">
+                            ✨ Adicionar Magia
+                        </button>
+                        <button onclick="clearForm()" 
+                            class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-150">
+                            🗑️ Limpar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Magias -->
+            <div class="bg-slate-800 rounded-lg border border-slate-600 p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <h2 class="text-xl font-bold text-green-400 flex items-center">
+                        📜 Magias Cadastradas (<span id="spell-count">0</span>)
+                    </h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="exportSpells()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 text-sm">
+                            📤 Exportar JSON
+                        </button>
+                        <button onclick="importSpells()" 
+                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-150 text-sm">
+                            📥 Importar JSON
+                        </button>
+                        <button onclick="clearAllSpells()" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 text-sm">
+                            🗑️ Limpar Todas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtro de Busca -->
+                <div class="mb-4">
+                    <input type="text" id="search-input" placeholder="Buscar magia..." oninput="filterSpells()"
+                        class="w-full p-2 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500">
+                </div>
+
+                <!-- Lista -->
+                <div id="spells-list" class="max-h-[60vh] overflow-y-auto space-y-2">
+                    <div class="text-center text-gray-400 py-8">
+                        Nenhuma magia cadastrada ainda. Adicione uma magia ao lado para começar!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-gray-400 text-sm">
+            <p>Sistema de Cadastro Colaborativo de Magias - Tormenta RPG</p>
+            <p>Desenvolvido para facilitar o compartilhamento de conhecimento mágico entre jogadores 🎲</p>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let spells = [];
+        let currentEditingSpell = null;
+        let tempLevels = [];
+
+        // Utilitários
+        const Utils = {
+            generateUUID: function() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            },
+            
+            sanitizeHTML: function(str) {
+                const temp = document.createElement('div');
+                temp.textContent = str;
+                return temp.innerHTML;
+            }
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSpells();
+            renderSpellsList();
+        });
+
+        // Funções do sistema de tags de níveis
+        function addSpellLevelTag() {
+            const typeSelect = document.getElementById('spell-level-type');
+            const levelInput = document.getElementById('spell-level-number');
+            
+            const type = typeSelect.value;
+            const level = levelInput.value;
+            
+            if (!level || level < 0 || level > 9) {
+                alert('Por favor, insira um nível válido (0-9)');
+                return;
+            }
+            
+            // Verificar se já existe essa combinação
+            const exists = tempLevels.some(l => l.type === type && l.level == level);
+            if (exists) {
+                alert('Essa combinação de tipo e nível já foi adicionada');
+                return;
+            }
+            
+            tempLevels.push({ type, level: parseInt(level) });
+            levelInput.value = '';
+            
+            renderLevelTags();
+        }
+
+        function removeLevelTag(index) {
+            tempLevels.splice(index, 1);
+            renderLevelTags();
+        }
+
+        function renderLevelTags() {
+            const container = document.getElementById('spell-level-tags');
+            
+            if (tempLevels.length === 0) {
+                container.innerHTML = '<span class="text-gray-400 text-sm">Nenhum nível adicionado</span>';
+                return;
+            }
+            
+            container.innerHTML = tempLevels.map((level, index) => {
+                const colorClass = level.type === 'Arcana' ? 'spell-tag-arcana' : 'spell-tag-divina';
+                return `
+                    <span class="spell-tag ${colorClass}" onclick="removeLevelTag(${index})">
+                        ${level.type} ${level.level} ❌
+                    </span>
+                `;
+            }).join('');
+        }
+
+        function getSpellLevelsString(levels) {
+            if (!levels || levels.length === 0) return '';
+            return levels.map(l => `${l.type} ${l.level}`).join(', ');
+        }
+
+        // Função para adicionar magia
+        function addSpell() {
+            const name = document.getElementById('spell-name').value.trim();
+            
+            if (!name) {
+                alert('Por favor, insira o nome da magia');
+                return;
+            }
+            
+            if (tempLevels.length === 0) {
+                alert('Por favor, adicione pelo menos um nível de magia');
+                return;
+            }
+            
+            // Verificar se já existe
+            const exists = spells.some(s => s.name.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                alert('Uma magia com esse nome já foi cadastrada');
+                return;
+            }
+            
+            const spell = {
+                id: Utils.generateUUID(),
+                name: name,
+                level: getSpellLevelsString(tempLevels),
+                levels: [...tempLevels],
+                school: document.getElementById('spell-school').value.trim(),
+                components: document.getElementById('spell-components').value.trim(),
+                time: document.getElementById('spell-time').value.trim(),
+                range: document.getElementById('spell-range').value.trim(),
+                target: document.getElementById('spell-target').value.trim(),
+                duration: document.getElementById('spell-duration').value.trim(),
+                resistance: document.getElementById('spell-resistance').value.trim(),
+                description: document.getElementById('spell-description').value.trim()
+            };
+            
+            spells.push(spell);
+            saveSpells();
+            clearForm();
+            renderSpellsList();
+            
+            // Feedback visual
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ Adicionada!';
+            button.style.backgroundColor = '#10b981';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '';
+            }, 1500);
+        }
+
+        // Função para limpar formulário
+        function clearForm() {
+            document.getElementById('spell-name').value = '';
+            document.getElementById('spell-school').value = '';
+            document.getElementById('spell-components').value = 'V, S, M';
+            document.getElementById('spell-time').value = '';
+            document.getElementById('spell-range').value = '';
+            document.getElementById('spell-target').value = '';
+            document.getElementById('spell-duration').value = '';
+            document.getElementById('spell-resistance').value = '';
+            document.getElementById('spell-description').value = '';
+            tempLevels = [];
+            renderLevelTags();
+        }
+
+        // Função para renderizar lista de magias
+        function renderSpellsList() {
+            const container = document.getElementById('spells-list');
+            const countElement = document.getElementById('spell-count');
+            
+            countElement.textContent = spells.length;
+            
+            if (spells.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        Nenhuma magia cadastrada ainda. Adicione uma magia ao lado para começar!
+                    </div>
+                `;
+                return;
+            }
+            
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filteredSpells = spells.filter(spell => 
+                spell.name.toLowerCase().includes(searchTerm) ||
+                spell.level.toLowerCase().includes(searchTerm) ||
+                spell.school.toLowerCase().includes(searchTerm)
+            );
+            
+            if (filteredSpells.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        Nenhuma magia encontrada com esse filtro.
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredSpells.map(spell => `
+                <div class="magic-list-item bg-slate-700 rounded-lg p-4 border border-slate-600">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-green-400 text-lg">${Utils.sanitizeHTML(spell.name)}</h3>
+                        <button onclick="removeSpell('${spell.id}')" 
+                            class="text-red-400 hover:text-red-300 text-xl" title="Remover magia">
+                            🗑️
+                        </button>
+                    </div>
+                    
+                    ${spell.levels ? `
+                        <div class="mb-2">
+                            ${spell.levels.map(level => {
+                                const colorClass = level.type === 'Arcana' ? 'spell-tag-arcana' : 'spell-tag-divina';
+                                return `<span class="spell-tag ${colorClass}">${level.type} ${level.level}</span>`;
+                            }).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mb-3">
+                        ${spell.school ? `<p><strong>Escola:</strong> ${Utils.sanitizeHTML(spell.school)}</p>` : ''}
+                        ${spell.components ? `<p><strong>Componentes:</strong> ${Utils.sanitizeHTML(spell.components)}</p>` : ''}
+                        ${spell.time ? `<p><strong>Tempo:</strong> ${Utils.sanitizeHTML(spell.time)}</p>` : ''}
+                        ${spell.range ? `<p><strong>Alcance:</strong> ${Utils.sanitizeHTML(spell.range)}</p>` : ''}
+                        ${spell.target ? `<p><strong>Alvo:</strong> ${Utils.sanitizeHTML(spell.target)}</p>` : ''}
+                        ${spell.duration ? `<p><strong>Duração:</strong> ${Utils.sanitizeHTML(spell.duration)}</p>` : ''}
+                        ${spell.resistance ? `<p><strong>Resistência:</strong> ${Utils.sanitizeHTML(spell.resistance)}</p>` : ''}
+                    </div>
+                    
+                    ${spell.description ? `
+                        <div class="text-sm text-gray-300 bg-slate-800 p-3 rounded">
+                            <strong>Descrição:</strong><br>
+                            ${Utils.sanitizeHTML(spell.description)}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Função para filtrar magias
+        function filterSpells() {
+            renderSpellsList();
+        }
+
+        // Função para remover magia
+        function removeSpell(id) {
+            if (confirm('Tem certeza que deseja remover esta magia?')) {
+                spells = spells.filter(spell => spell.id !== id);
+                saveSpells();
+                renderSpellsList();
+            }
+        }
+
+        // Função para limpar todas as magias
+        function clearAllSpells() {
+            if (confirm('Tem certeza que deseja remover TODAS as magias cadastradas?')) {
+                spells = [];
+                saveSpells();
+                renderSpellsList();
+            }
+        }
+
+        // Funções de persistência
+        function saveSpells() {
+            localStorage.setItem('collaborative-spells', JSON.stringify(spells));
+        }
+
+        function loadSpells() {
+            const saved = localStorage.getItem('collaborative-spells');
+            if (saved) {
+                try {
+                    spells = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Erro ao carregar magias:', e);
+                    spells = [];
+                }
+            }
+        }
+
+        // Funções de importação e exportação
+        function exportSpells() {
+            if (spells.length === 0) {
+                alert('Não há magias para exportar');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(spells, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `magias-colaborativas-${new Date().toISOString().split('T')[0]}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+            
+            alert(`Arquivo exportado com ${spells.length} magias!`);
+        }
+
+        function importSpells() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedSpells = JSON.parse(e.target.result);
+                        
+                        if (!Array.isArray(importedSpells)) {
+                            alert('Arquivo inválido! O arquivo deve conter um array de magias.');
+                            return;
+                        }
+                        
+                        let importedCount = 0;
+                        let duplicatedCount = 0;
+                        
+                        importedSpells.forEach(spell => {
+                            if (spell.name) {
+                                const exists = spells.some(s => s.name.toLowerCase() === spell.name.toLowerCase());
+                                if (!exists) {
+                                    spells.push({
+                                        id: Utils.generateUUID(),
+                                        name: spell.name,
+                                        level: spell.level || '',
+                                        levels: spell.levels || [],
+                                        school: spell.school || '',
+                                        components: spell.components || '',
+                                        time: spell.time || '',
+                                        range: spell.range || '',
+                                        target: spell.target || '',
+                                        duration: spell.duration || '',
+                                        resistance: spell.resistance || '',
+                                        description: spell.description || ''
+                                    });
+                                    importedCount++;
+                                } else {
+                                    duplicatedCount++;
+                                }
+                            }
+                        });
+                        
+                        saveSpells();
+                        renderSpellsList();
+                        
+                        let message = `Importação concluída!\n`;
+                        message += `✅ ${importedCount} magias adicionadas\n`;
+                        if (duplicatedCount > 0) {
+                            message += `⚠️ ${duplicatedCount} magias já existiam e foram ignoradas`;
+                        }
+                        
+                        alert(message);
+                        
+                    } catch (error) {
+                        console.error('Erro ao importar:', error);
+                        alert('Erro ao importar arquivo. Verifique se é um arquivo JSON válido.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // Atalhos de teclado
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter para adicionar magia
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                addSpell();
+            }
+            
+            // Escape para limpar formulário
+            if (e.key === 'Escape') {
+                clearForm();
+            }
+        });
+    </script>
+</body>
+</html>

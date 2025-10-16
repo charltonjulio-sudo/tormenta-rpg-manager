@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Raças de Tormenta</title>
+    <!-- Carregamento do Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Configuração de Fonte Inter (Tailwind padrão) */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; }
+        /* Estilo para a área de traços (textarea) */
+        #tracosRaciais {
+            min-height: 100px;
+        }
+        /* Estilo para botões de ação e exportação */
+        .action-button {
+            transition: all 0.2s;
+        }
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        /* Estilo para a caixa de listagem de raças */
+        .race-card {
+            border-left: 5px solid #4f46e5; /* Cor de destaque Arton */
+        }
+    </style>
+    <script>
+        // Variáveis globais para as raças
+        let races = [];
+
+        // Função utilitária para gerar IDs únicos (usando crypto.randomUUID como base)
+        const generateId = () => crypto.randomUUID();
+
+        // Estrutura base de Habilidades
+        const ABILITIES = ['FOR', 'DES', 'CON', 'INT', 'SAB', 'CAR'];
+
+        /**
+         * Carrega as raças do localStorage ou define dados iniciais.
+         */
+        function loadRaces() {
+            try {
+                const storedRaces = localStorage.getItem('tormentaRaces');
+                if (storedRaces) {
+                    races = JSON.parse(storedRaces);
+                } else {
+                    // Dados iniciais com base no conteúdo do PDF, focando na mecânica de RPG
+                    races = [
+                        {
+                            id: generateId(),
+                            nome: "Anão",
+                            tamanho: "Médio",
+                            deslocamento: "6m",
+                            ajustes: { FOR: 0, DES: -2, CON: 4, INT: 0, SAB: 2, CAR: 0 },
+                            tracos: "Visão no Escuro (18m), +4 em testes de resistência contra venenos e magia, machados e martelos são armas simples, CA +4 contra adversários Grandes ou maiores, +2 em perícias (pedra/metal)."
+                        },
+                        {
+                            id: generateId(),
+                            nome: "Elfo",
+                            tamanho: "Médio",
+                            deslocamento: "9m",
+                            ajustes: { FOR: 0, DES: 4, CON: -2, INT: 2, SAB: 0, CAR: 0 },
+                            tracos: "Visão na Penumbra, +4 em Vontade contra encantamentos e imune à magia sono, +4 em Identificar Magia e Percepção, CD +2 em magias arcanas, Foco em Arma bônus."
+                        },
+                        {
+                            id: generateId(),
+                            nome: "Humano",
+                            tamanho: "Médio",
+                            deslocamento: "9m",
+                            ajustes: { FOR: 0, DES: 0, CON: 0, INT: 0, SAB: 0, CAR: 0 }, // Ajustes são +2 em duas habilidades (aplicado na ficha), mas a raça em si não tem valores fixos.
+                            tracos: "+2 em duas habilidades à escolha, 2 talentos adicionais à escolha, 2 perícias treinadas extras."
+                        },
+                        {
+                            id: generateId(),
+                            nome: "Minotauro",
+                            tamanho: "Médio",
+                            deslocamento: "9m",
+                            ajustes: { FOR: 4, DES: 0, CON: 2, INT: 0, SAB: 0, CAR: -2 },
+                            tracos: "CA +1 (couro rígido), Ataque natural (Chifres 1d6, -4 em todos ataques), Faro, Lógica Labiríntica (+8 Sobrevivência/Não se Perder), Medo de altura (-4 em jogadas/testes a 3m+)."
+                        },
+                    ];
+                    saveRaces();
+                }
+            } catch (error) {
+                console.error("Erro ao carregar raças:", error);
+                // Exibe uma mensagem de erro na UI (substituindo o alert)
+                displayMessage("Erro ao carregar dados. Verifique o console para detalhes.", 'error');
+            }
+            renderRaces();
+        }
+
+        /**
+         * Salva o array de raças no localStorage.
+         */
+        function saveRaces() {
+            localStorage.setItem('tormentaRaces', JSON.stringify(races));
+        }
+
+        /**
+         * Exibe uma mensagem de feedback na UI.
+         */
+        function displayMessage(message, type = 'success') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'text-green-700', 'text-red-700');
+            messageBox.classList.add(type === 'success' ? 'bg-green-100' : 'bg-red-100', type === 'success' ? 'text-green-700' : 'text-red-700');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
+
+        /**
+         * Adiciona ou atualiza uma raça a partir do formulário.
+         */
+        function addRace(event) {
+            event.preventDefault();
+            const form = event.target;
+            const newRace = {
+                id: form.dataset.editingId || generateId(),
+                nome: document.getElementById('nomeRaca').value.trim(),
+                tamanho: document.getElementById('tamanhoRaca').value,
+                deslocamento: document.getElementById('deslocamentoRaca').value,
+                ajustes: {},
+                tracos: document.getElementById('tracosRaciais').value.trim()
+            };
+
+            // Coleta os ajustes de habilidade
+            ABILITIES.forEach(abbr => {
+                newRace.ajustes[abbr] = parseInt(document.getElementById(`ajuste_${abbr}`).value) || 0;
+            });
+
+            // Validação simples
+            if (newRace.nome === "") {
+                displayMessage("O nome da raça é obrigatório.", 'error');
+                return;
+            }
+
+            if (form.dataset.editingId) {
+                // Edição
+                const index = races.findIndex(r => r.id === newRace.id);
+                if (index !== -1) {
+                    races[index] = newRace;
+                    displayMessage(`Raça "${newRace.nome}" atualizada com sucesso!`);
+                }
+                form.removeAttribute('data-editing-id');
+                document.getElementById('saveButton').textContent = 'Cadastrar Raça';
+            } else {
+                // Cadastro
+                races.push(newRace);
+                displayMessage(`Raça "${newRace.nome}" cadastrada com sucesso!`);
+            }
+
+            saveRaces();
+            renderRaces();
+            form.reset();
+        }
+
+        /**
+         * Preenche o formulário para edição de uma raça.
+         */
+        function editRace(id) {
+            const raceToEdit = races.find(r => r.id === id);
+            if (!raceToEdit) return;
+
+            document.getElementById('nomeRaca').value = raceToEdit.nome;
+            document.getElementById('tamanhoRaca').value = raceToEdit.tamanho;
+            document.getElementById('deslocamentoRaca').value = raceToEdit.deslocamento;
+            document.getElementById('tracosRaciais').value = raceToEdit.tracos;
+
+            ABILITIES.forEach(abbr => {
+                document.getElementById(`ajuste_${abbr}`).value = raceToEdit.ajustes[abbr];
+            });
+
+            const form = document.getElementById('raceForm');
+            form.dataset.editingId = id;
+            document.getElementById('saveButton').textContent = 'Salvar Edição';
+
+            // Rolagem para o topo para facilitar a edição
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /**
+         * Remove uma raça da lista.
+         */
+        function deleteRace(id) {
+            if (confirm("Tem certeza que deseja remover esta raça?")) {
+                const raceName = races.find(r => r.id === id)?.nome || 'Raça desconhecida';
+                races = races.filter(r => r.id !== id);
+                saveRaces();
+                renderRaces();
+                displayMessage(`Raça "${raceName}" removida.`);
+            }
+        }
+
+        /**
+         * Renderiza a lista de raças na UI.
+         */
+        function renderRaces() {
+            const listContainer = document.getElementById('raceList');
+            listContainer.innerHTML = ''; // Limpa a lista antes de renderizar
+
+            if (races.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 p-4 text-center">Nenhuma raça cadastrada. Use o formulário acima para começar!</p>';
+                return;
+            }
+
+            races.forEach(race => {
+                // Renderiza os ajustes de habilidade como string formatada
+                const adjString = ABILITIES.map(abbr => {
+                    const value = race.ajustes[abbr];
+                    const sign = value > 0 ? '+' : '';
+                    const color = value > 0 ? 'text-green-600' : (value < 0 ? 'text-red-600' : 'text-gray-500');
+                    return `<span class="${color}">${abbr}: ${sign}${value}</span>`;
+                }).join(' / ');
+
+                const tracosList = race.tracos.split('\n').filter(t => t.trim() !== '');
+
+                const raceCard = `
+                    <div class="bg-white p-5 rounded-xl shadow-lg mb-4 race-card flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="flex-grow">
+                            <h3 class="text-2xl font-bold text-indigo-700 mb-2">${race.nome}</h3>
+                            <p class="text-sm font-semibold text-gray-700">Tamanho: <span class="text-gray-900">${race.tamanho}</span> | Deslocamento: <span class="text-gray-900">${race.deslocamento}</span></p>
+                            <div class="text-sm mt-1 font-mono">${adjString}</div>
+                            
+                            <div class="mt-3 text-sm">
+                                <p class="font-semibold text-gray-700 mb-1">Traços Raciais:</p>
+                                <ul class="list-disc pl-5 text-gray-600 space-y-1">
+                                    ${tracosList.length > 0 ? tracosList.map(t => `<li>${t.trim()}</li>`).join('') : `<li>${race.tracos.trim()}</li>`}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="flex flex-col space-y-2 mt-4 md:mt-0 md:ml-4">
+                            <label class="flex items-center space-x-2 text-sm text-gray-600">
+                                <input type="checkbox" class="race-selector rounded text-indigo-600 focus:ring-indigo-500" data-id="${race.id}">
+                                <span>Selecionar</span>
+                            </label>
+                            <button onclick="editRace('${race.id}')" class="bg-yellow-500 text-white p-2 rounded-lg text-sm font-semibold hover:bg-yellow-600 action-button">Editar</button>
+                            <button onclick="deleteRace('${race.id}')" class="bg-red-500 text-white p-2 rounded-lg text-sm font-semibold hover:bg-red-600 action-button">Remover</button>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += raceCard;
+            });
+        }
+
+        /**
+         * Exporta as raças (selecionadas ou todas) para um arquivo JSON.
+         */
+        function exportRaces(onlySelected = false) {
+            let racesToExport = [];
+            let exportCount = 0;
+
+            if (onlySelected) {
+                const selectedIds = Array.from(document.querySelectorAll('.race-selector:checked')).map(cb => cb.dataset.id);
+                racesToExport = races.filter(race => selectedIds.includes(race.id));
+                exportCount = racesToExport.length;
+                if (exportCount === 0) {
+                    displayMessage("Selecione pelo menos uma raça para exportar.", 'error');
+                    return;
+                }
+            } else {
+                racesToExport = races;
+                exportCount = races.length;
+                if (exportCount === 0) {
+                    displayMessage("Não há raças para exportar.", 'error');
+                    return;
+                }
+            }
+
+            const dataStr = JSON.stringify(racesToExport, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `racas_tormenta_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            displayMessage(`${exportCount} raça(s) exportada(s) com sucesso!`);
+        }
+
+        /**
+         * Importa raças a partir de um arquivo JSON.
+         */
+        function importRaces(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedData)) {
+                        throw new Error("O arquivo JSON não contém uma lista de raças válida.");
+                    }
+
+                    let importCount = 0;
+                    importedData.forEach(importedRace => {
+                        // Garante que a raça importada tenha um ID único
+                        if (!importedRace.id || races.some(r => r.id === importedRace.id)) {
+                            importedRace.id = generateId();
+                        }
+                        // Verifica se já existe e atualiza, ou adiciona (prioriza a adição de novas, se o ID for novo)
+                        if (races.some(r => r.id === importedRace.id)) {
+                             // Se o ID já existe, atualizamos (simulando uma sobrescrita ou atualização)
+                             const index = races.findIndex(r => r.id === importedRace.id);
+                             races[index] = importedRace;
+                        } else {
+                            races.push(importedRace);
+                        }
+                        importCount++;
+                    });
+
+                    saveRaces();
+                    renderRaces();
+                    displayMessage(`${importCount} raça(s) importada(s) com sucesso!`);
+                } catch (error) {
+                    console.error("Erro ao processar arquivo de importação:", error);
+                    displayMessage(`Erro na importação: ${error.message}`, 'error');
+                } finally {
+                    // Limpa o input file para permitir a importação do mesmo arquivo novamente
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Inicialização do sistema
+        window.onload = loadRaces;
+
+    </script>
+</head>
+<body class="p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-indigo-800">Sistema de Raças de Tormenta</h1>
+            <p class="text-indigo-600">Gerenciamento de dados mecânicos para RPG</p>
+        </header>
+
+        <!-- Área de Mensagens -->
+        <div id="messageBox" class="hidden p-3 mb-6 rounded-lg font-medium text-sm border border-transparent"></div>
+
+        <!-- Painel de Importação/Exportação -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Gerenciamento de Dados</h2>
+            <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+                <!-- Exportar Tudo -->
+                <button onclick="exportRaces(false)" class="action-button bg-indigo-600 text-white p-3 rounded-lg flex-1 font-bold hover:bg-indigo-700">
+                    Exportar TODAS as Raças (JSON)
+                </button>
+                <!-- Exportar Selecionadas -->
+                <button onclick="exportRaces(true)" class="action-button bg-purple-600 text-white p-3 rounded-lg flex-1 font-bold hover:bg-purple-700">
+                    Exportar SELECIONADAS (JSON)
+                </button>
+                <!-- Importar -->
+                <div class="relative flex-1">
+                    <input type="file" id="importFile" accept=".json" onchange="importRaces(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <label for="importFile" class="action-button bg-gray-500 text-white p-3 rounded-lg block text-center font-bold hover:bg-gray-600 cursor-pointer">
+                        Importar Raças (JSON)
+                    </label>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3 text-center">Os dados são salvos automaticamente no seu navegador (Local Storage).</p>
+        </div>
+
+
+        <!-- Área de Cadastro de Raças -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Cadastro / Edição de Raça</h2>
+            <form id="raceForm" onsubmit="addRace(event)">
+                <div class="space-y-4">
+                    <!-- Nome da Raça -->
+                    <div>
+                        <label for="nomeRaca" class="block text-sm font-medium text-gray-700">Nome da Raça</label>
+                        <input type="text" id="nomeRaca" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500" placeholder="Ex: Goblin, Qareen" required>
+                    </div>
+
+                    <!-- Tamanho e Deslocamento -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="tamanhoRaca" class="block text-sm font-medium text-gray-700">Tamanho</label>
+                            <select id="tamanhoRaca" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="Médio">Médio</option>
+                                <option value="Pequeno">Pequeno</option>
+                                <option value="Grande">Grande</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="deslocamentoRaca" class="block text-sm font-medium text-gray-700">Deslocamento</label>
+                            <input type="text" id="deslocamentoRaca" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500" placeholder="Ex: 9m, 6m">
+                        </div>
+                    </div>
+
+                    <!-- Ajustes de Habilidade -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Ajustes de Habilidade (Ex: +4, -2, 0)</label>
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                            <!-- Input para FOR -->
+                            <div class="flex flex-col items-center">
+                                <label for="ajuste_FOR" class="text-xs font-semibold text-gray-600">FOR</label>
+                                <input type="number" id="ajuste_FOR" value="0" class="w-full text-center rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <!-- Input para DES -->
+                            <div class="flex flex-col items-center">
+                                <label for="ajuste_DES" class="text-xs font-semibold text-gray-600">DES</label>
+                                <input type="number" id="ajuste_DES" value="0" class="w-full text-center rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <!-- Input para CON -->
+                            <div class="flex flex-col items-center">
+                                <label for="ajuste_CON" class="text-xs font-semibold text-gray-600">CON</label>
+                                <input type="number" id="ajuste_CON" value="0" class="w-full text-center rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <!-- Input para INT -->
+                            <div class="flex flex-col items-center">
+                                <label for="ajuste_INT" class="text-xs font-semibold text-gray-600">INT</label>
+                                <input type="number" id="ajuste_INT" value="0" class="w-full text-center rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <!-- Input para SAB -->
+                            <div class="flex flex-col items-center">
+                                <label for="ajuste_SAB" class="text-xs font-semibold text-gray-600">SAB</label>
+                                <input type="number" id="ajuste_SAB" value="0" class="w-full text-center rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <!-- Input para CAR -->
+                            <div class="flex flex-col items-center">
+                                <label for="ajuste_CAR" class="text-xs font-semibold text-gray-600">CAR</label>
+                                <input type="number" id="ajuste_CAR" value="0" class="w-full text-center rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Traços Raciais -->
+                    <div>
+                        <label for="tracosRaciais" class="block text-sm font-medium text-gray-700">Traços Raciais (Um por linha ou separados por vírgula)</label>
+                        <textarea id="tracosRaciais" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500" placeholder="Ex: Visão no Escuro. CA +1."></textarea>
+                    </div>
+
+                    <button type="submit" id="saveButton" class="action-button w-full bg-indigo-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-indigo-700">
+                        Cadastrar Raça
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Área de Listagem de Raças -->
+        <div class="bg-gray-100 p-6 rounded-xl shadow-inner border border-gray-300">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 border-b border-gray-300 pb-2">Raças Cadastradas</h2>
+            <div id="raceList">
+                <!-- As raças serão renderizadas aqui pelo JavaScript -->
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
+

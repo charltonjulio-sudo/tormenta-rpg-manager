@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro Colaborativo de Talentos - Tormenta RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            min-height: 100vh;
+        }
+        .themed-bg-surface { background-color: #334155; }
+        .themed-bg-surface-alt { background-color: #475569; }
+        .themed-text-base { color: #e2e8f0; }
+        .themed-text-muted { color: #94a3b8; }
+        .themed-border { border-color: #64748b; }
+        .talent-list-item {
+            transition: all 0.2s ease;
+        }
+        .talent-list-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="themed-text-base">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-green-400 mb-2">
+                🎯 Cadastro Colaborativo de Talentos
+            </h1>
+            <p class="text-lg text-gray-300 mb-4">Sistema Tormenta RPG</p>
+            <div class="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 max-w-2xl mx-auto">
+                <p class="text-sm text-blue-200">
+                    <strong>📋 Instruções:</strong> Cadastre os talentos que você conhece e depois exporte o arquivo JSON para enviar ao organizador da campanha.
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Painel de Cadastro -->
+            <div class="bg-slate-800 rounded-lg border border-slate-600 p-6">
+                <h2 class="text-xl font-bold text-green-400 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Cadastrar Novo Talento
+                </h2>
+                
+                <div class="space-y-4">
+                    <input type="text" id="talent-name" placeholder="Nome do Talento" 
+                        class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                    
+                    <select id="talent-type" class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                        <option value="combate">Talentos de Combate</option>
+                        <option value="pericia">Talentos de Perícia</option>
+                        <option value="magia">Talentos de Magia</option>
+                        <option value="destino">Talentos de Destino</option>
+                        <option value="bencao">Talentos de Bênção</option>
+                        <option value="poderes">Talentos de Poderes Concedidos</option>
+                        <option value="tormenta">Talentos da Tormenta</option>
+                        <option value="raciais">Talentos Raciais</option>
+                        <option value="regionais">Talentos Regionais</option>
+                        <option value="epicos">Talentos Épicos</option>
+                        <option value="negativos">Talentos Negativos</option>
+                        <option value="jutsus">Talentos de Jutsus</option>
+                    </select>
+                    
+                    <input type="text" id="talent-prerequisite" placeholder="Pré-requisitos (Ex: For 13, BAB +1)" 
+                        class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50">
+                    
+                    <textarea id="talent-description" placeholder="Descrição detalhada do talento..." rows="4" 
+                        class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50"></textarea>
+                    
+                    <textarea id="talent-benefit" placeholder="Benefício específico do talento..." rows="3" 
+                        class="w-full p-3 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500 focus:ring-2 focus:ring-green-500/50"></textarea>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="addTalent()" 
+                            class="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition duration-150">
+                            ⭐ Adicionar Talento
+                        </button>
+                        <button onclick="clearForm()" 
+                            class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-150">
+                            🗑️ Limpar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Talentos -->
+            <div class="bg-slate-800 rounded-lg border border-slate-600 p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <h2 class="text-xl font-bold text-green-400 flex items-center">
+                        🏆 Talentos Cadastrados (<span id="talent-count">0</span>)
+                    </h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="exportTalents()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 text-sm">
+                            📤 Exportar JSON
+                        </button>
+                        <button onclick="importTalents()" 
+                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-150 text-sm">
+                            📥 Importar JSON
+                        </button>
+                        <button onclick="clearAllTalents()" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 text-sm">
+                            🗑️ Limpar Todos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtro de Busca -->
+                <div class="mb-4 space-y-2">
+                    <input type="text" id="search-input" placeholder="Buscar talento..." oninput="filterTalents()"
+                        class="w-full p-2 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500">
+                    
+                    <select id="type-filter" onchange="filterTalents()" class="w-full p-2 rounded-lg themed-bg-surface themed-text-base themed-border border focus:border-green-500">
+                        <option value="">Todos os Tipos</option>
+                        <option value="combate">Combate</option>
+                        <option value="pericia">Perícia</option>
+                        <option value="magia">Magia</option>
+                        <option value="destino">Destino</option>
+                        <option value="bencao">Bênção</option>
+                        <option value="poderes">Poderes Concedidos</option>
+                        <option value="tormenta">Tormenta</option>
+                        <option value="raciais">Raciais</option>
+                        <option value="regionais">Regionais</option>
+                        <option value="epicos">Épicos</option>
+                        <option value="negativos">Negativos</option>
+                        <option value="jutsus">Jutsus</option>
+                    </select>
+                </div>
+
+                <!-- Lista -->
+                <div id="talents-list" class="max-h-[60vh] overflow-y-auto space-y-2">
+                    <div class="text-center text-gray-400 py-8">
+                        Nenhum talento cadastrado ainda. Adicione um talento ao lado para começar!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-gray-400 text-sm">
+            <p>Sistema de Cadastro Colaborativo de Talentos - Tormenta RPG</p>
+            <p>Desenvolvido para facilitar o compartilhamento de conhecimento entre jogadores 🎲</p>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let talents = [];
+        let currentEditingTalent = null;
+
+        // Utilitários
+        const Utils = {
+            generateUUID: function() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            },
+            
+            sanitizeHTML: function(str) {
+                const temp = document.createElement('div');
+                temp.textContent = str;
+                return temp.innerHTML;
+            }
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTalents();
+            renderTalentsList();
+        });
+
+        // Obter cor do tipo de talento
+        function getTalentTypeColor(type) {
+            const colors = {
+                'combate': 'bg-red-600 text-white',
+                'pericia': 'bg-blue-600 text-white',
+                'magia': 'bg-purple-600 text-white',
+                'destino': 'bg-yellow-600 text-black',
+                'bencao': 'bg-green-600 text-white',
+                'poderes': 'bg-indigo-600 text-white',
+                'tormenta': 'bg-red-800 text-white',
+                'raciais': 'bg-orange-600 text-white',
+                'regionais': 'bg-teal-600 text-white',
+                'epicos': 'bg-pink-600 text-white',
+                'negativos': 'bg-gray-600 text-white',
+                'jutsus': 'bg-cyan-600 text-white'
+            };
+            return colors[type] || 'bg-gray-600 text-white';
+        }
+
+        // Obter label do tipo de talento
+        function getTalentTypeLabel(type) {
+            const labels = {
+                'combate': 'Combate',
+                'pericia': 'Perícia',
+                'magia': 'Magia',
+                'destino': 'Destino',
+                'bencao': 'Bênção',
+                'poderes': 'Poderes Concedidos',
+                'tormenta': 'Tormenta',
+                'raciais': 'Raciais',
+                'regionais': 'Regionais',
+                'epicos': 'Épicos',
+                'negativos': 'Negativos',
+                'jutsus': 'Jutsus'
+            };
+            return labels[type] || 'Desconhecido';
+        }
+
+        // Função para adicionar talento
+        function addTalent() {
+            const name = document.getElementById('talent-name').value.trim();
+            
+            if (!name) {
+                alert('Por favor, insira o nome do talento');
+                return;
+            }
+            
+            // Verificar se já existe
+            const exists = talents.some(t => t.name.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                alert('Um talento com esse nome já foi cadastrado');
+                return;
+            }
+            
+            const talent = {
+                id: Utils.generateUUID(),
+                name: name,
+                type: document.getElementById('talent-type').value,
+                prerequisite: document.getElementById('talent-prerequisite').value.trim(),
+                description: document.getElementById('talent-description').value.trim(),
+                benefit: document.getElementById('talent-benefit').value.trim()
+            };
+            
+            talents.push(talent);
+            saveTalents();
+            clearForm();
+            renderTalentsList();
+            
+            // Feedback visual
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ Adicionado!';
+            button.style.backgroundColor = '#10b981';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '';
+            }, 1500);
+        }
+
+        // Função para limpar formulário
+        function clearForm() {
+            document.getElementById('talent-name').value = '';
+            document.getElementById('talent-type').value = 'combate';
+            document.getElementById('talent-prerequisite').value = '';
+            document.getElementById('talent-description').value = '';
+            document.getElementById('talent-benefit').value = '';
+        }
+
+        // Função para renderizar lista de talentos
+        function renderTalentsList() {
+            const container = document.getElementById('talents-list');
+            const countElement = document.getElementById('talent-count');
+            
+            countElement.textContent = talents.length;
+            
+            if (talents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        Nenhum talento cadastrado ainda. Adicione um talento ao lado para começar!
+                    </div>
+                `;
+                return;
+            }
+            
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('type-filter').value;
+            
+            let filteredTalents = talents.filter(talent => {
+                const matchesSearch = talent.name.toLowerCase().includes(searchTerm) ||
+                    talent.type.toLowerCase().includes(searchTerm) ||
+                    (talent.prerequisite && talent.prerequisite.toLowerCase().includes(searchTerm)) ||
+                    (talent.description && talent.description.toLowerCase().includes(searchTerm));
+                
+                const matchesType = !typeFilter || talent.type === typeFilter;
+                
+                return matchesSearch && matchesType;
+            });
+            
+            if (filteredTalents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        Nenhum talento encontrado com esse filtro.
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredTalents.map(talent => `
+                <div class="talent-list-item bg-slate-700 rounded-lg p-4 border border-slate-600">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-green-400 text-lg">${Utils.sanitizeHTML(talent.name)}</h3>
+                        <button onclick="removeTalent('${talent.id}')" 
+                            class="text-red-400 hover:text-red-300 text-xl" title="Remover talento">
+                            🗑️
+                        </button>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full ${getTalentTypeColor(talent.type)}">
+                            ${getTalentTypeLabel(talent.type)}
+                        </span>
+                    </div>
+                    
+                    ${talent.prerequisite ? `<p class="text-sm text-amber-300 mb-2"><strong>Pré-requisitos:</strong> ${Utils.sanitizeHTML(talent.prerequisite)}</p>` : ''}
+                    
+                    ${talent.description ? `
+                        <div class="text-sm text-gray-300 mb-2">
+                            <strong>Descrição:</strong><br>
+                            ${Utils.sanitizeHTML(talent.description)}
+                        </div>
+                    ` : ''}
+                    
+                    ${talent.benefit ? `
+                        <div class="text-sm text-gray-300 bg-slate-800 p-3 rounded">
+                            <strong>Benefício:</strong><br>
+                            ${Utils.sanitizeHTML(talent.benefit)}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Função para filtrar talentos
+        function filterTalents() {
+            renderTalentsList();
+        }
+
+        // Função para remover talento
+        function removeTalent(id) {
+            if (confirm('Tem certeza que deseja remover este talento?')) {
+                talents = talents.filter(talent => talent.id !== id);
+                saveTalents();
+                renderTalentsList();
+            }
+        }
+
+        // Função para limpar todos os talentos
+        function clearAllTalents() {
+            if (confirm('Tem certeza que deseja remover TODOS os talentos cadastrados?')) {
+                talents = [];
+                saveTalents();
+                renderTalentsList();
+            }
+        }
+
+        // Funções de persistência
+        function saveTalents() {
+            localStorage.setItem('collaborative-talents', JSON.stringify(talents));
+        }
+
+        function loadTalents() {
+            const saved = localStorage.getItem('collaborative-talents');
+            if (saved) {
+                try {
+                    talents = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Erro ao carregar talentos:', e);
+                    talents = [];
+                }
+            }
+        }
+
+        // Funções de importação e exportação
+        function exportTalents() {
+            if (talents.length === 0) {
+                alert('Não há talentos para exportar');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(talents, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `talentos-colaborativos-${new Date().toISOString().split('T')[0]}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+            
+            alert(`Arquivo exportado com ${talents.length} talentos!`);
+        }
+
+        function importTalents() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedTalents = JSON.parse(e.target.result);
+                        
+                        if (!Array.isArray(importedTalents)) {
+                            alert('Arquivo inválido! O arquivo deve conter um array de talentos.');
+                            return;
+                        }
+                        
+                        let importedCount = 0;
+                        let duplicatedCount = 0;
+                        
+                        importedTalents.forEach(talent => {
+                            if (talent.name) {
+                                const exists = talents.some(t => t.name.toLowerCase() === talent.name.toLowerCase());
+                                if (!exists) {
+                                    talents.push({
+                                        id: Utils.generateUUID(),
+                                        name: talent.name,
+                                        type: talent.type || 'combate',
+                                        prerequisite: talent.prerequisite || '',
+                                        description: talent.description || '',
+                                        benefit: talent.benefit || ''
+                                    });
+                                    importedCount++;
+                                } else {
+                                    duplicatedCount++;
+                                }
+                            }
+                        });
+                        
+                        saveTalents();
+                        renderTalentsList();
+                        
+                        let message = `Importação concluída!\n`;
+                        message += `✅ ${importedCount} talentos adicionados\n`;
+                        if (duplicatedCount > 0) {
+                            message += `⚠️ ${duplicatedCount} talentos já existiam e foram ignorados`;
+                        }
+                        
+                        alert(message);
+                        
+                    } catch (error) {
+                        console.error('Erro ao importar:', error);
+                        alert('Erro ao importar arquivo. Verifique se é um arquivo JSON válido.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // Atalhos de teclado
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter para adicionar talento
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                addTalent();
+            }
+            
+            // Escape para limpar formulário
+            if (e.key === 'Escape') {
+                clearForm();
+            }
+        });
+    </script>
+</body>
+</html>
